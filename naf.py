@@ -11,29 +11,30 @@ from keras import backend as K
 import theano.tensor as T
 import numpy as np
 from buffer import Buffer
+import matplotlib.pyplot as plt
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--batch_size', type=int, default=100)
-parser.add_argument('--hidden_size', type=int, default=100)
-parser.add_argument('--layers', type=int, default=2)
+parser = argparse.ArgumentParser(description='NAF')
+parser.add_argument('--batch_size', nargs='?', type=int, default=100)
+parser.add_argument('--hidden_size', nargs='?', type=int, default=100)
+parser.add_argument('--layers', nargs='?', type=int, default=2)
 parser.add_argument('--batch_norm', action="store_true", default=False)
 parser.add_argument('--no_batch_norm', action="store_false", dest="batch_norm")
-parser.add_argument('--max_norm', type=int)
+parser.add_argument('--max_norm', nargs='?', type=int)
 parser.add_argument('--unit_norm', action='store_true', default=False)
-parser.add_argument('--l2_reg', type=float)
-parser.add_argument('--l1_reg', type=float)
-parser.add_argument('--replay_size', type=int, default=100000)
-parser.add_argument('--train_repeat', type=int, default=10)
-parser.add_argument('--gamma', type=float, default=0.99)
-parser.add_argument('--tau', type=float, default=0.001)
-parser.add_argument('--episodes', type=int, default=200)
-parser.add_argument('--max_timesteps', type=int, default=200)
-parser.add_argument('--activation', choices=['tanh', 'relu'], default='tanh')
-parser.add_argument('--optimizer', choices=['adam', 'rmsprop'], default='adam')
-parser.add_argument('--optimizer_lr', type=float, default=0.001)
-parser.add_argument('--noise', choices=['linear_decay', 'exp_decay', 'fixed', 'covariance'], default='linear_decay')
-parser.add_argument('--noise_scale', type=float, default=0.01)
-parser.add_argument('--display', action='store_true', default=True)
+parser.add_argument('--l2_reg', nargs='?', type=float)
+parser.add_argument('--l1_reg', nargs='?', type=float)
+parser.add_argument('--replay_size', nargs='?', type=int, default=100000)
+parser.add_argument('--train_repeat', nargs='?', type=int, default=10)
+parser.add_argument('--gamma', nargs='?', type=float, default=0.99)
+parser.add_argument('--tau', nargs='?', type=float, default=0.001)
+parser.add_argument('--episodes', nargs='?', type=int, default=500)
+parser.add_argument('--max_timesteps', nargs='?', type=int, default=200)
+parser.add_argument('--activation', nargs='?', choices=['tanh', 'relu'], default='tanh')
+parser.add_argument('--optimizer', nargs='?', choices=['adam', 'rmsprop'], default='adam')
+parser.add_argument('--optimizer_lr', nargs='?', type=float, default=0.001)
+parser.add_argument('--noise', nargs='?', choices=['linear_decay', 'exp_decay', 'fixed', 'covariance'], default='linear_decay')
+parser.add_argument('--noise_scale', nargs='?', type=float, default=0.01)
+parser.add_argument('--display', action='store_true', default=False)
 parser.add_argument('--no_display', dest='display', action='store_false')
 parser.add_argument('--gym_record')
 parser.add_argument('environment')
@@ -42,7 +43,7 @@ args = parser.parse_args()
 assert K._BACKEND == 'theano', "only works with Theano as backend"
 
 # create environment
-env = gym.make(args.environment)
+env = gym.make(args.environment).env
 assert isinstance(env.observation_space, Box), "observation space must be continuous"
 assert isinstance(env.action_space, Box), "action space must be continuous"
 assert len(env.action_space.shape) == 1
@@ -183,6 +184,8 @@ R = Buffer(args.replay_size, env.observation_space.shape, env.action_space.shape
 
 # the main learning loop
 total_reward = 0
+reward_list = []
+
 for i_episode in range(args.episodes):
     observation = env.reset()
     #print "initial state:", observation
@@ -250,8 +253,16 @@ for i_episode in range(args.episodes):
 
     print("Episode {} finished after {} timesteps, reward {}".format(i_episode + 1, t + 1, episode_reward))
     total_reward += episode_reward
+    reward_list.append(episode_reward)
 
 print("Average reward per episode {}".format(total_reward / args.episodes))
+
+plt.plot(range(0,args.episodes), reward_list, linewidth=2)
+plt.xlabel("Episodes")
+plt.ylabel("Reward")
+plt.title("Performance")
+plt.savefig('naf-'+args.environment+"-"+str(args.episodes)+'-'+str(args.max_timesteps)+'.jpg')
+plt.close()
 
 if args.gym_record:
   env.monitor.close()

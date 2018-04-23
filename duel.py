@@ -7,31 +7,32 @@ from keras.layers.normalization import BatchNormalization
 from keras import backend as K
 import numpy as np
 from buffer import Buffer
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--batch_size', type=int, default=100)
-parser.add_argument('--hidden_size', type=int, default=100)
-parser.add_argument('--layers', type=int, default=1)
+parser.add_argument('--batch_size', nargs='?', type=int, default=100)
+parser.add_argument('--hidden_size', nargs='?', type=int, default=100)
+parser.add_argument('--layers', nargs='?', type=int, default=1)
 parser.add_argument('--batch_norm', action="store_true", default=False)
 parser.add_argument('--no_batch_norm', action="store_false", dest='batch_norm')
-parser.add_argument('--replay_size', type=int, default=100000)
-parser.add_argument('--train_repeat', type=int, default=10)
-parser.add_argument('--gamma', type=float, default=0.99)
-parser.add_argument('--tau', type=float, default=0.1)
-parser.add_argument('--episodes', type=int, default=200)
-parser.add_argument('--max_timesteps', type=int, default=200)
-parser.add_argument('--activation', choices=['tanh', 'relu'], default='tanh')
-parser.add_argument('--optimizer', choices=['adam', 'rmsprop'], default='adam')
-#parser.add_argument('--optimizer_lr', type=float, default=0.001)
-parser.add_argument('--exploration', type=float, default=0.1)
-parser.add_argument('--advantage', choices=['naive', 'max', 'avg'], default='naive')
-parser.add_argument('--display', action='store_true', default=True)
+parser.add_argument('--replay_size', nargs='?', type=int, default=100000)
+parser.add_argument('--train_repeat', nargs='?', type=int, default=10)
+parser.add_argument('--gamma', nargs='?', type=float, default=0.99)
+parser.add_argument('--tau', nargs='?', type=float, default=0.1)
+parser.add_argument('--episodes', nargs='?', type=int, default=500)
+parser.add_argument('--max_timesteps', nargs='?', type=int, default=200)
+parser.add_argument('--activation', nargs='?', choices=['tanh', 'relu'], default='tanh')
+parser.add_argument('--optimizer', nargs='?', choices=['adam', 'rmsprop'], default='adam')
+#parser.add_argument('--optimizer_lr', nargs='?', type=float, default=0.001)
+parser.add_argument('--exploration', nargs='?', type=float, default=0.1)
+parser.add_argument('--advantage', nargs='?', choices=['naive', 'max', 'avg'], default='naive')
+parser.add_argument('--display', action='store_true', default=False)
 parser.add_argument('--no_display', dest='display', action='store_false')
 parser.add_argument('--gym_record')
 parser.add_argument('environment')
 args = parser.parse_args()
 
-env = gym.make(args.environment)
+env = gym.make(args.environment).env
 assert isinstance(env.observation_space, Box)
 assert isinstance(env.action_space, Discrete)
 
@@ -73,12 +74,14 @@ target_model.set_weights(model.get_weights())
 mem = Buffer(args.replay_size, env.observation_space.shape, (1,))
 
 total_reward = 0
+cumulative_reward = 0
+reward_list = []
 for i_episode in xrange(args.episodes):
     observation = env.reset()
     episode_reward = 0
     for t in xrange(args.max_timesteps):
-        if args.display:
-            env.render()
+        # if args.display:
+            # env.render()
 
         if np.random.random() < args.exploration:
             action = env.action_space.sample()
@@ -114,12 +117,23 @@ for i_episode in xrange(args.episodes):
             target_model.set_weights(target_weights)
 
         if done:
+            print(t)
             break
 
     print "Episode {} finished after {} timesteps, episode reward {}".format(i_episode + 1, t + 1, episode_reward)
     total_reward += episode_reward
+    cumulative_reward = cumulative_reward * 0.95 + episode_reward * 0.05
+    reward_list.append(cumulative_reward)
 
 print "Average reward per episode {}".format(total_reward / args.episodes)
+
+plt.plot(range(0,args.episodes), reward_list, linewidth=2)
+plt.xlabel("Episodes")
+plt.ylabel("Reward")
+plt.title("Performance")
+plt.savefig('duel-'+args.environment+"-"+str(args.episodes)+'-'+str(args.max_timesteps)+'.jpg')
+plt.close()
+
 
 if args.gym_record:
     env.monitor.close()
