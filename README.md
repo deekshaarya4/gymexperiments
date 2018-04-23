@@ -1,11 +1,11 @@
 # OpenAI Gym experiments
 
-My implementations of [normalized advantage functions](http://arxiv.org/abs/1603.00748) (NAF) for continuous actions spaces and [dueling network architecture](http://arxiv.org/abs/1511.06581) (DUEL) for discrete action spaces. 
+My implementations of [normalized advantage functions](http://arxiv.org/abs/1603.00748) (NAF) for continuous actions spaces and [dueling network architecture](http://arxiv.org/abs/1511.06581) (DUEL) for discrete action spaces.
 
 Example results with NAF:
  * [InvertedPendulum-v1](https://gym.openai.com/evaluations/eval_CzoNQdPSAm0J3ikTBSTCg)
  * [Pendulum-v0](https://gym.openai.com/evaluations/eval_IU3wehAQQRuJRbzMjy26QQ)
- 
+
 Example results with DUEL:
  * [CartPole-v0](https://gym.openai.com/evaluations/eval_sOUmkzSy26GIWJ5IIQeA)
  * [MountainCar-v0](https://gym.openai.com/evaluations/eval_nAU6XkQhSuKrVNNZdQ5xQ)
@@ -15,11 +15,12 @@ Example results with DUEL:
 
 You will need:
  * Python 2.7
+ * Python 3 (for KBRL and Actor-Critic)
  * [OpenAI Gym](https://gym.openai.com/)
  * [Keras](http://keras.io/)
  * [Numpy](http://www.numpy.org/)
  * [Scikit-Learn](http://scikit-learn.org) (if using imagination rollouts)
- 
+
 In Ubuntu that would be:
 
 ```
@@ -46,3 +47,7 @@ Some other utility scipts:
  * `python test.py <envid>` - test script to run random actions against the environment,
  * `python naf_search.sh` - example how to run crude hyperparameter search for NAF,
  * `python duel_search.sh` - example how to run crude hyperparameter search for DUEL.
+
+Additionally:
+ * `python3 kbrl.py <envid>` - run KBRL with KNN against environment with discrete action space
+ * `python3 actor_critic.py <envid>` - run Actor Critic model against environment with discrete action space
